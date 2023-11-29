@@ -14,11 +14,8 @@ class CampaignController extends Controller
         return view('frontend.campaign.listing', compact('campaigns'));
     }
 
-    public function campaignDetail(Request $request)
+    public function campaignDetail(Campaign $campaign)
     {
-        // dd('in');
-        $campaign = Campaign::where('id', $request->id)->first();
-        // dd($campaign);
         return view('frontend.campaign.detail', compact('campaign'));
     }
 }

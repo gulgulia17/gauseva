@@ -9,13 +9,9 @@ class CampaignProduct extends Model
 {
     use HasFactory;
 
+    protected $table = 'campaign_product';
+
     public $fillable = [
         'campaign_id', 'product_id',
     ];
-
-    // public function category()
-    // {
-    //     return $this->belongsTo(Category::class);
-    // }
-
 }

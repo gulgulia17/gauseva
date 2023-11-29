@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Backend;
 
-use App\Http\Controllers\Controller;
-use App\Models\Campaign;
-use App\Models\CampaignProduct;
-use App\Models\Category;
 use App\Models\Product;
+use App\Models\Campaign;
+use App\Models\Category;
 use Illuminate\Http\Request;
+use App\Models\CampaignProduct;
+use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Controller;
+use App\Services\ImageUploadService;
 
 class CampaignController extends Controller
 {
@@ -32,13 +34,13 @@ class CampaignController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function create()
+    public function create(Campaign $campaign)
     {
         $categories = Category::where('type', 'campaign')->orderBy('category_name', 'desc')->get();
         $products = Product::where('status', 1)->orderBy('id', 'desc')->get();
-        // dd($categories);
-        // dd($products);
-        return view('backend.campaign.create', compact('categories', 'products'));
+        $campaignProducts = [];
+
+        return view('backend.campaign.create', compact('categories', 'products', 'campaign', 'campaignProducts'));
     }
 
     /**
@@ -47,52 +49,66 @@ class CampaignController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(Request $request, ImageUploadService $imageUploadService)
     {
-        // dd($request->all());
-        $this->validate($request, [
-            'category_id' => 'required',
-            'title' => 'required',
-            'price' => 'required',
-            'time_duration' => 'required',
-            'owner_of_campaign' => 'required',
-            'description' => 'required',
-            'image' => 'image|mimes:jpeg,png,jpg',
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'category_id' => 'required|exists:categories,id',
+            'product_id.*' => 'required|exists:products,id',
+            'price' => 'required|numeric',
+            'created_by' => 'required|string',
+            // 'created_by' => 'required|exists:users,id',
+            'start_at' => 'required|date',
+            'end_at' => 'required|date|after:start_at',
+            'project_description' => 'required|string',
+            'is_featured' => 'required|boolean',
+            'images.*' => ['required','image','mimes:jpeg,png,jpg','max:2048'],
+            'documents.*' => ['required','image','mimes:jpeg,png,jpg','max:2048']
         ]);
 
-        // $data = $request->all();
+        try {
+            DB::beginTransaction();
 
-        if ($request->hasFile('image')) {
-            $imageName = time() . '.' . $request->image->extension();
-            $request->image->move(public_path('campaign/images'), $imageName);
-            $data['image'] = $imageName;
-        } else {
-            $data['image'] = 'product.png';
-        }
-
-        $campaign = new Campaign();
-        $campaign->category_id = $request->input('category_id');
-        $campaign->title = $request->input('title');
-        $campaign->price = $request->input('price');
-        $campaign->time_duration = $request->input('time_duration');
-        $campaign->owner_of_campaign = $request->input('owner_of_campaign');
-        $campaign->is_featured = $request->input('is_featured');
-        $campaign->description = $request->input('description');
-        $campaign->image = $data['image'];
-        $saved = $campaign->save();
-
-        if (!empty($campaign)) {
-            foreach ($request->product_id as $product_id) {
-                $campaignProduct = new CampaignProduct();
-                $campaignProduct->campaign_id = $campaign->id;
-                $campaignProduct->product_id = $product_id;
-                $campaignProduct->save();
+            if ($request->has('images')) {
+                $imagesUploaded = [];
+                foreach ($validated['images'] as $image) {
+                    $imagesUploaded[] = $imageUploadService->uploadImage(
+                        $image,
+                        'images/campaign'
+                    );
+                }
+                $validated['images'] = json_encode($imagesUploaded);
+            } else {
+                $validated['images'] = json_encode(['product.png']);
             }
-        }
 
-        // Blog::create($data);
-        // dd($data);
-        return redirect()->route('admin.campaign.index')->with('success', 'Campaign Created Successfully');
+            if ($request->has('documents')) {
+                $imagesUploaded = [];
+                foreach ($validated['documents'] as $image) {
+                    $imagesUploaded[] = $imageUploadService->uploadImage(
+                        $image,
+                        'images/documents'
+                    );
+                }
+                $validated['documents'] = json_encode($imagesUploaded);
+            }
+
+            $campaign = Campaign::create($validated);
+
+            $campaign->campaignProducts()->createMany(
+                collect($request->product_id)->map(function ($product_id) {
+                    return ['product_id' => $product_id];
+                })->toArray()
+            );
+
+            DB::commit();
+
+            return redirect()->route('admin.campaign.index')->with('success', 'Campaign Created Successfully');
+        } catch (\Exception $e) {
+            DB::rollback();
+            throw $e;
+            return redirect()->back()->withInput()->withErrors(['error' => 'Failed to create campaign']);
+        }
     }
 
     /**
@@ -115,46 +131,48 @@ class CampaignController extends Controller
     public function edit(Campaign $campaign)
     {
         $categories = Category::where('type', 'campaign')->orderBy('category_name', 'desc')->get();
-        return view('backend.campaign.edit', compact('campaign', 'categories'));
+        $products = Product::where('status', 1)->orderBy('id', 'desc')->get();
+        $campaignProducts = $campaign->campaignProducts->pluck('product_id')->toArray();
+
+        return view('backend.campaign.edit', compact('campaign', 'categories', 'products', 'campaignProducts'));
     }
 
     /**
      * Update the specified resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
+     * @param  Campaign  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, ImageUploadService $imageUploadService, Campaign $id)
     {
-        $this->validate($request, [
-            'category_id' => 'required',
-            'title' => 'required',
-            'price' => 'required',
-            'time_duration' => 'required',
-            'owner_of_campaign' => 'required',
-            'description' => 'required',
-            'image' => 'image|mimes:jpeg,png,jpg',
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'category_id' => 'required|exists:categories,id',
+            'price' => 'required|numeric',
+            'created_by' => 'required|string',
+            // 'created_by' => 'required|exists:users,id',
+            'start_at' => 'required|date',
+            'end_at' => 'required|date|after:start_at',
+            'project_description' => 'required|string',
+            'is_featured' => 'required|boolean',
+            'images.*' => 'required|image|mimes:jpeg,png,jpg|max:2048'
         ]);
 
-        $campaign = Campaign::findOrFail($id);
-        // $data = $request->all();
+        $campaign = $id;
 
-        if ($request->hasFile('image')) {
-            $imageName = time() . '.' . $request->image->extension();
-            $request->image->move(public_path('campaign/images'), $imageName);
-            $data['image'] = $imageName;
+        if ($request->has('images')) {
+            $imagesUploaded = [];
+            foreach ($validated['images'] as $image) {
+                $imagesUploaded[] = $imageUploadService->uploadImage(
+                    $image,
+                    'images/campaign'
+                );
+            }
+            $validated['images'] = json_encode($imagesUploaded);
         }
-        // $blog->update($data);
-        $campaign->category_id = $request->input('category_id');
-        $campaign->title = $request->input('title');
-        $campaign->price = $request->input('price');
-        $campaign->time_duration = $request->input('time_duration');
-        $campaign->owner_of_campaign = $request->input('owner_of_campaign');
-        $campaign->is_featured = $request->input('is_featured');
-        $campaign->description = $request->input('description');
-        $saved = $campaign->save();
 
+        $campaign->update($validated);
         return redirect()->route('admin.campaign.index')->with('success', 'Campaign Updated SuccessFully');
     }
 

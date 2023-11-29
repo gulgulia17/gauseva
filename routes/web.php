@@ -21,11 +21,7 @@ use Illuminate\Support\Facades\Route;
 Route::group(['as' => 'frontend.'], function () {
     Route::get('/', [HomeController::class, 'home'])->name('index');
 
-    Route::get('/campaigns', [CampaignController::class, 'campaignListing'])->name('campaign.listing'); 
-    Route::get('/campaign/detail/{id}', [CampaignController::class, 'campaignDetail'])->name('campaign.detail');  
-   
+    Route::get('/campaigns', [CampaignController::class, 'campaignListing'])->name('campaign.listing');
+    Route::get('/campaign/detail/{campaign}', [CampaignController::class, 'campaignDetail'])->name('campaign.detail');
+
 });
-
-// Route::group(['middleware' => 'auth', 'as' => 'frontend.'], function () {
-
-// });

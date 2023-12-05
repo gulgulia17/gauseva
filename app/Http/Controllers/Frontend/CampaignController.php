@@ -11,11 +11,11 @@ class CampaignController extends Controller
     public function campaignListing()
     {
         $campaigns = Campaign::where('status', 1)->latest()->paginate(6)->withQueryString();
-        return view('frontend.campaign.listing', compact('campaigns'));
+        return view('campaign.listing', compact('campaigns'));
     }
 
     public function campaignDetail(Campaign $campaign)
     {
-        return view('frontend.campaign.detail', compact('campaign'));
+        return view('campaign.detail', compact('campaign'));
     }
 }

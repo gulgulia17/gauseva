@@ -1,8 +1,9 @@
 <?php
 
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Frontend\HomeController;
 use App\Http\Controllers\Frontend\CampaignController;
-use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,10 +19,8 @@ use Illuminate\Support\Facades\Route;
 // Route::get('/login', [LoginController::class, 'view'])->name('login.view');
 // Route::post('/login', [LoginController::class, 'loginAttempt'])->name('login');
 
-Route::group(['as' => 'frontend.'], function () {
-    Route::get('/', [HomeController::class, 'home'])->name('index');
+Auth::routes();
+Route::get('/', [HomeController::class, 'home'])->name('index');
 
-    Route::get('/campaigns', [CampaignController::class, 'campaignListing'])->name('campaign.listing');
-    Route::get('/campaign/detail/{campaign}', [CampaignController::class, 'campaignDetail'])->name('campaign.detail');
-
-});
+Route::get('/campaigns', [CampaignController::class, 'campaignListing'])->name('campaign.listing');
+Route::get('/campaign/detail/{campaign}', [CampaignController::class, 'campaignDetail'])->name('campaign.detail');

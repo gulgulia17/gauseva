@@ -1,4 +1,4 @@
-@extends('frontend.layout.master')
+@extends('layouts.master')
 @section('content')
     <section class="top-slider" @style('margin-top:10%')>
         <div id="carouselExample" class="carousel slide carousel-fade">
@@ -109,13 +109,13 @@
                 @foreach ($campaigns as $campaign)
                     <div class="col-md-4">
                         <div class="card">
-                            <a href="{{ route('frontend.campaign.detail', $campaign->id) }}">
+                            <a href="{{ route('campaign.detail', $campaign->id) }}">
                                 <img src="{{ url('images/campaign/' . $campaign->image) }}" class="card-img-top"
                                     alt="...">
                             </a>
                             <div class="card-body">
                                 <h3>
-                                    <a href="{{ route('frontend.campaign.detail', $campaign->id) }}">
+                                    <a href="{{ route('campaign.detail', $campaign->id) }}">
                                         {{ ucwords($campaign->title) }}
                                     </a>
                                 </h3>
@@ -148,7 +148,7 @@
                                 <div class="d-flex justify-content-between btn-panel">
                                     <a href="#" class="btn btn-outline-primary"><i
                                             class="fa fa-facebook-official"></i> Share</a>
-                                    <a href="{{ route('frontend.campaign.detail', $campaign->id) }}"
+                                    <a href="{{ route('campaign.detail', $campaign->id) }}"
                                         class="btn btn-danger">
                                         Donate Now
                                     </a>

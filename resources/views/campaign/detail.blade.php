@@ -1,4 +1,4 @@
-@extends('frontend.layout.master')
+@extends('layouts.master')
 @section('content')
     <section class="top-slider mt-100">
         <div class="container">
@@ -158,7 +158,7 @@
                         <h4 class="pt-2 pb-3"> Project </h4>
                         <div class="row mb-2">
                             <div class="col-md-12">
-                                {{$campaign->project_description}}
+                                {!!$campaign->project_description!!}
                             </div>
                         </div>
                     </section>

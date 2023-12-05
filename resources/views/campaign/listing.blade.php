@@ -1,4 +1,4 @@
-@extends('frontend.layout.master')
+@extends('layouts.master')
 @section('content')
 
 <section class="">
@@ -15,7 +15,7 @@
         @forelse ($campaigns as $campaign)
             <div class="col-md-4">
                 <div class="card">
-                <a href="{{ route('frontend.campaign.detail', $campaign->id) }}">
+                <a href="{{ route('campaign.detail', $campaign->id) }}">
                     <img src="{{asset('campaign/images/'.$campaign->image)}}" class="card-img-top" alt="..."></a>
                     <div class="card-body">
                         <h3>{{ucwords($campaign->title)}}</h3>

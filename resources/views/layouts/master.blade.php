@@ -12,11 +12,11 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/10.0.0/css/bootstrap-slider.min.css">
 </head>
 <body data-spy="scroll" data-target=".scrollspy">
-@include('frontend.layout.header')
+@include('layouts.header')
 
 @yield('content')
 
-@include('frontend.layout.footer')
+@include('layouts.footer')
 
 <!-- Modal -->
 <div class="modal" id="loginsignup" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
